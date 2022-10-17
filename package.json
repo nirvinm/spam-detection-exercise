@@ -1,0 +1,25 @@
+{
+  "name": "spam-detection-exercise",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nirvinm/spam-detection-exercise.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nirvinm/spam-detection-exercise/issues"
+  },
+  "homepage": "https://github.com/nirvinm/spam-detection-exercise#readme",
+  "devDependencies": {
+    "@types/node": "^18.11.0",
+    "ts-node": "^10.9.1",
+    "tslib": "^2.4.0",
+    "typescript": "^4.8.4"
+  }
+}
