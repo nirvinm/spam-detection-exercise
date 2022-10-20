@@ -1,53 +1,64 @@
+import {
+  Band,
+  Bucket,
+  HashKey,
+  Shingle,
+  Signature,
+  TextDocument,
+  Vocabulary,
+} from "./lsh-types";
 import { MinHash } from "./minhash";
 import { buildVocabulary, oneHotEncode, shingle } from "./shingle";
 
-// Locality Sensitive Hashing
+// Implementation of Locality Sensitive Hashing. Each instance might
+// produce different values but it should still maintain relative probability with
+// other documents.
 export class LSH {
   private BUCKETS_COUNT;
 
-  private documentBandsPair: [number, number[][]][];
-  private buckets: Map<string, number[]>[] = [];
+  private documentBandsPair: [number, Band[]][];
+  private buckets: Bucket[] = [];
 
   constructor(
-    documents: string[],
+    documents: TextDocument[],
     bucketsCount: number,
-    hashFunctionsCount: number,
-    shingleSize: number
+    hashFunctionsCount: number
   ) {
     this.BUCKETS_COUNT = bucketsCount;
     this.initBuckets();
 
-    const shingles = documents.map((s) => shingle(s, shingleSize));
+    const shingles = documents.map(shingle);
     const vocabulary = buildVocabulary(shingles);
     const minHash = new MinHash(vocabulary, hashFunctionsCount);
-    const signatures: number[][] = [];
-    for (let i = 0; i < documents.length; ++i) {
-      signatures.push(
-        minHash.getSignature(oneHotEncode(shingles[i], vocabulary))
-      );
-    }
-    this.documentBandsPair = documents.map((d, i) => [
+    const signatures = this.generateSignatures(
+      documents,
+      minHash,
+      shingles,
+      vocabulary
+    );
+
+    this.documentBandsPair = documents.map((_, i) => [
       i,
       this.generateBands(signatures[i]),
     ]);
 
-    this.documentBandsPair.forEach((pair: any) => {
-      let [d, bands] = pair;
-      for (let i = 0; i < bands.length; ++i) {
-        this.addHash(i, bands[i], d);
+    this.documentBandsPair.forEach((pair) => {
+      let [documentIndex, bands] = pair;
+      for (let bandIndex = 0; bandIndex < bands.length; ++bandIndex) {
+        this.addHash(bandIndex, bands[bandIndex], documentIndex);
       }
     });
   }
 
-  // gets possible candiates that are similar to given document.
-  // this does not indicate strong correlation between the documents.
-  // the consumer must compute jaccard similarity or other scores in
+  // Gets possible candiates that are similar to given document.
+  // This does not indicate strong correlation between the documents.
+  // The caller must compute jaccard similarity or other scores in
   // order to determine how close the documents are.
   getSimilarDocuments(documentIndex: number) {
     const [_, bands] = this.documentBandsPair[documentIndex];
     const documents: number[][] = [];
     bands.forEach((row, i) => {
-      const key = row.join(",");
+      const key = this.makeKey(row);
       if (this.buckets[i].has(key)) {
         documents.push(this.buckets[i].get(key) || []);
       }
@@ -55,7 +66,26 @@ export class LSH {
     return new Set<number>(documents.flat());
   }
 
-  private generateBands(signature: number[]) {
+  // enerate signaure for a document based on it's vocabulary by generating
+  // one-hot encoded vector first and then shriking the vector into
+  private generateSignatures(
+    documents: TextDocument[],
+    minHash: MinHash,
+    shingles: Shingle[][],
+    vocabulary: Vocabulary
+  ): Signature[] {
+    const signatures: Signature[] = [];
+    for (let i = 0; i < documents.length; ++i) {
+      signatures.push(
+        minHash.getSignature(oneHotEncode(shingles[i], vocabulary))
+      );
+    }
+    return signatures;
+  }
+
+
+  // Splits the signature of a document into multiple bands
+  private generateBands(signature: Signature): Band[] {
     if (signature.length % this.BUCKETS_COUNT != 0) {
       throw new Error(
         "signature length must be divisible by number of buckets."
@@ -63,21 +93,29 @@ export class LSH {
     }
 
     const rows = signature.length / this.BUCKETS_COUNT;
-    const result: number[][] = [];
+    const bands: Band[] = [];
     for (let i = 0; i < signature.length; i += rows) {
-      result.push(signature.slice(i, i + rows));
+      bands.push(signature.slice(i, i + rows));
     }
-    return result;
+    return bands;
   }
 
-  private addHash(bandIndex: number, bandRow: number[], documentId: number) {
-    const key = bandRow.join(",");
+  // Adds a document to the bucket in the given band using the given row as the key.
+  private addHash(bandIndex: number, bandRow: Band, documentId: number) {
+    const key = this.makeKey(bandRow);
     if (!this.buckets[bandIndex].has(key)) {
       this.buckets[bandIndex].set(key, []);
     }
     this.buckets[bandIndex].get(key)?.push(documentId);
   }
 
+  // Generates key for use in hash-table from given band row
+  private makeKey(bandRow: Band): HashKey {
+    return bandRow.join(",");
+  }
+
+  // Creates empty buckets of length BUCKETS_COUNT configured with hash table initialized
+  // in each bucket.
   private initBuckets() {
     for (let i = 0; i < this.BUCKETS_COUNT; ++i)
       this.buckets[i] = new Map<string, number[]>();

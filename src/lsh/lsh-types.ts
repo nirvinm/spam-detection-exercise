@@ -1,0 +1,9 @@
+export type TextDocument = string
+export type Shingle = string
+export type Vocabulary = string[]
+export type OneHotEncodedVector = (1|0)[]
+export type HashFunction = number[]
+export type Signature = number[]
+export type Band = number[]
+export type HashKey = string
+export type Bucket = Map<HashKey, number[]>
