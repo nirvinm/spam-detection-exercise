@@ -6,6 +6,7 @@ import {
 } from "../config";
 import { jaccard } from "./lib/Array";
 import { LSH } from "./lsh/lsh";
+import { TextDocument } from "./lsh/lsh-types";
 import { shingle } from "./lsh/shingle";
 
 // Spam Detection Engine based on Locality Sensitive Hashing
@@ -40,12 +41,12 @@ export class SpamDetectionEngine {
   // Get all emails that are closesly similar to given email.
   // It works by splitting emails into shingles and computing jaccard
   // similarity (shingles(A) intersection shingles(B))
-  private filterClosestEmails(queryEmail: string, matchingEmails: number[]) {
+  private filterClosestEmails(queryEmail: TextDocument, candidateEmailsIndex: number[]) {
     // let's generate shingles for the given email to compare with shingles from candidate emails.
     const queryShingles = shingle(queryEmail);
 
     const result: number[] = [];
-    matchingEmails.forEach((candidateDocumentIndex) => {
+    candidateEmailsIndex.forEach((candidateDocumentIndex) => {
       // compute jaccard similarity between the given email's shingles and current candidate's email shingles
       const candidateShingles = shingle(queryEmail);
       const probability = jaccard(queryShingles, candidateShingles);
