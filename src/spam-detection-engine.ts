@@ -2,7 +2,6 @@ import {
   HASH_FUNCTIONS_COUNT,
   LSH_BUCKET_SIZE,
   MIN_SIMILARITY,
-  SHINGLE_SIZE,
 } from "../config";
 import { jaccard } from "./lib/Array";
 import { LSH } from "./lsh/lsh";
