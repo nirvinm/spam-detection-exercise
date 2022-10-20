@@ -1,9 +1,10 @@
-import { HASH_FUNCTIONS_COUNT, LSH_BUCKET_SIZE, SHINGLE_SIZE } from "../config";
+import { HASH_FUNCTIONS_COUNT, LSH_BUCKET_SIZE, MIN_SIMILARITY, SHINGLE_SIZE } from "../config";
 import { jaccard } from "./lib/Array";
 import { LSH } from "./lsh/lsh";
 import { shingle } from "./lsh/shingle";
 
-// Spam Detection based on Locality Sensitive Hashing
+
+// Spam Detection Engine based on Locality Sensitive Hashing
 export class SpamDetectionEngine {
   lsh: LSH;
   emails: string[];
@@ -18,27 +19,42 @@ export class SpamDetectionEngine {
     );
   }
 
-  // computes spam probability for a given email.
-  // the algorithm is as follows
+  // Computes spam probability for a given email.
+  // The algorithm is as follows
   //  1. Build LSH from given email documents.
   //  2. Query LSH for possible candiates based on collisions of shingles (signature)
   //  3. For each candidate, compute jaccard similarity between the given query email and candiate email document
   //  4. Filter all high similarity documents
   //  5. Return probability (matching emails / total emails)
   spamProbability(emailIndex: number) {
-    const matchingDocuments = Array.from(
+    // get all candidate emails that are similar to the given email.
+    // these are may or may not be closely matching with given email.
+    const matchingEmails = Array.from(
       this.lsh.getSimilarDocuments(emailIndex)
     );
     const queryEmail = this.emails[emailIndex];
+    const result: number[] = this.filterClosestEmails(queryEmail, matchingEmails);
+    return result.length / this.emails.length; // probability is closely matching emails / total emails in the set
+  }
+
+  // Get all emails that are closesly similar to given email.
+  // It works by splitting emails into shingles and computing jaccard
+  // similarity (shingles(A) intersection shingles(B))
+  private filterClosestEmails(queryEmail: string, matchingEmails: number[]) {
+    
+    // let's generate shingles for the given email to compare with shingles from candidate emails.
     const queryShingles = shingle(queryEmail, SHINGLE_SIZE);
 
     const result: number[] = [];
-    matchingDocuments.forEach((candidateDocumentIndex) => {
-      const candidateShingles = shingle(this.emails[emailIndex], SHINGLE_SIZE);
-      var probability = jaccard(queryShingles, candidateShingles);
-      if (probability > 0.8) result.push(candidateDocumentIndex);
-    });
+    matchingEmails.forEach((candidateDocumentIndex) => {
+      // compute jaccard similarity between the given email's shingles and current candidate's email shingles
+      const candidateShingles = shingle(queryEmail, SHINGLE_SIZE);
+      const probability = jaccard(queryShingles, candidateShingles);
 
-    return result.length / this.emails.length;
+      // if similarity is equal or greater than configured MIN_SIMILARITY, consider this is a close match
+      if (probability >= MIN_SIMILARITY)
+        result.push(candidateDocumentIndex);
+    });
+    return result;
   }
 }
