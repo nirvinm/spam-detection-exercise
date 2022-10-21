@@ -1,6 +1,7 @@
 // Randomize the given array.
 // Courtesy: https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
 export function shuffle<T>(array: T[]): T[] {
+  array = [...array];
   let currentIndex = array.length;
   let randomIndex: number;
 

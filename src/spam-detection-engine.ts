@@ -14,6 +14,9 @@ export class SpamDetectionEngine {
   emails: string[];
 
   constructor(emails: string[]) {
+    if (emails.length < 2) {
+      throw new Error('atleast two documents are required.');
+    }
     this.emails = emails;
     this.lsh = new LSH(emails, LSH_BUCKET_SIZE, HASH_FUNCTIONS_COUNT);
   }
@@ -47,7 +50,7 @@ export class SpamDetectionEngine {
     const result: number[] = [];
     candidateEmailsIndex.forEach((candidateDocumentIndex) => {
       // compute jaccard similarity between the given email's shingles and current candidate's email shingles
-      const candidateShingles = shingle(queryEmail);
+      const candidateShingles = shingle(this.emails[candidateDocumentIndex]);
       const probability = jaccard(queryShingles, candidateShingles);
 
       // if similarity is equal or greater than configured MIN_SIMILARITY, consider this is a close match

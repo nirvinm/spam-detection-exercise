@@ -10,6 +10,9 @@ import {
 // Note: The shingles are not constant sized.
 export function shingle(s: TextDocument): Shingle[] {
   let result = new Set<string>(s.split(" ").map((k) => k.trim().toLowerCase()));
+  // remove spaces and empty string if any which are unnecessary for LSH
+  result.delete("");
+  result.delete(" ");
   return Array.from(result);
 }
 
@@ -18,7 +21,7 @@ export function buildVocabulary(shingles: Shingle[][]): Vocabulary {
   return Array.from(new Set(shingles.flat())); // array preserves the order of the vocabulary
 }
 
-// Encode given shingles in an array such that the value 1 indicates the vocabulary
+// Encode given shingles in an array such that the value 1 indicates that vocabulary
 // is present in the shingles and 0 indicates the vocabulary not present.
 export function oneHotEncode(
   shingles: Shingle[],
