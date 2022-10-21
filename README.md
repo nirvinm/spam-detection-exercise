@@ -29,3 +29,10 @@ NodeJS 14 or 16
 
 You can give email texts in `example-input.ts` file as an array of strings.
 
+
+## Run tests
+
+All modules are unit tested with 100% coverage. To run the unit tests,
+
+    $ npm run test
+    
