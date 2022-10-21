@@ -24,12 +24,18 @@ export class LSH {
     bucketsCount: number,
     hashFunctionsCount: number
   ) {
+    // pre initialize buckets
     this.BUCKETS_COUNT = bucketsCount;
     this.initBuckets();
 
+    // shingle and generate vocabulary from all documents
     const shingles = documents.map(shingle);
     const vocabulary = buildVocabulary(shingles);
+
+    // need a MinHash instance to generate signatures
     const minHash = new MinHash(vocabulary, hashFunctionsCount);
+
+    // generate signature for each document using the vocabulary and shingles
     const signatures = this.generateSignatures(
       documents,
       minHash,
@@ -37,11 +43,14 @@ export class LSH {
       vocabulary
     );
 
+    // for every document, divide each signature into multiple bands
+    // of constant sized length.
     this.documentBandsPair = documents.map((_, i) => [
       i,
       this.generateBands(signatures[i]),
     ]);
 
+    // take each row from each band and push it into the hashtable in the bucket
     this.documentBandsPair.forEach((pair) => {
       let [documentIndex, bands] = pair;
       for (let bandIndex = 0; bandIndex < bands.length; ++bandIndex) {
@@ -57,12 +66,17 @@ export class LSH {
   getSimilarDocuments(documentIndex: number) {
     const [_, bands] = this.documentBandsPair[documentIndex];
     const documents: number[][] = [];
+
+    // filter all documents that share exact rows in any one of the
+    // bands we generated.
     bands.forEach((row, i) => {
       const key = this.makeKey(row);
       if (this.buckets[i].has(key)) {
         documents.push(this.buckets[i].get(key) || []);
       }
     });
+
+    // return set of unique document IDs that might be similar to given document
     return new Set<number>(documents.flat());
   }
 
