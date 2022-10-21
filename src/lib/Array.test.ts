@@ -1,4 +1,4 @@
-import { jaccard, shuffle } from "./Array";
+import { jaccard, shuffle } from "./array";
 
 describe("Array", () => {
   describe("shuffle", () => {

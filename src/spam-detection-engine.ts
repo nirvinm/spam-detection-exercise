@@ -3,7 +3,7 @@ import {
   LSH_BUCKET_SIZE,
   MIN_SIMILARITY,
 } from "../config";
-import { jaccard } from "./lib/Array";
+import { jaccard } from "./lib/array";
 import { LSH } from "./lsh/lsh";
 import { TextDocument } from "./lsh/lsh-types";
 import { shingle } from "./lsh/shingle";

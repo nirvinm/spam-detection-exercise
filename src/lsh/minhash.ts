@@ -1,4 +1,4 @@
-import { shuffle } from "../lib/Array";
+import { shuffle } from "../lib/array";
 import {
   HashFunction,
   OneHotEncodedVector,
